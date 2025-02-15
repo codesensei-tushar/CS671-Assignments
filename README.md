@@ -79,7 +79,7 @@ Described Perceptron model with a one-against-one approach for the given classif
 
 <p align="center">
     <img src="Outputs/EpochvsLoss_MLP.png" width="49%" alt="Error vs. Epochs for MLP">
-    <img src="Outputs/EpochvsLoss_CNN.png" width="49%" alt="Error vs. Epochs for CNN">
+    <img src="Outputs/EPOCHvsLOSS_CNN.png" width="49%" alt="Error vs. Epochs for CNN">
     <br><b>Figure 8:</b> Error vs. Epochs during Training for MLP and CNN
 </p>
 
