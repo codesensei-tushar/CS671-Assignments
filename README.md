@@ -25,13 +25,13 @@ The activation function is crucial for introducing non-linearity into the model,
 #### Activation Functions Used:
 
 - **Sigmoid:**
-  \[ \sigma(x) = \frac{1}{1 + e^{-x}} \]
+$$\sigma(x) = \frac{1}{1 + e^{-x}}$$
   - Used in the hidden layers.
   - Maps input to (0,1).
   - Can suffer from vanishing gradients.
 
 - **Softmax:**
-  \[ \sigma(x_i) = \frac{e^{x_i}}{\sum_{j} e^{x_j}} \]
+  $$\sigma(x_i) = \frac{e^{x_i}}{\sum_{j} e^{x_j}} $$
   - Used for multi-class classification in the output layer.
   - Converts logits to probabilities.
 
@@ -81,17 +81,17 @@ The activation function is crucial for introducing non-linearity into the model,
 #### Activation Functions
 
 - **ReLU:**
-  \[ f(x) = \max(0, x) \]
+  f(x) = $$\max(0, x) $$
 
 - **Softmax:**
-  \[ \sigma(x_i) = \frac{e^{x_i}}{\sum_{j} e^{x_j}} \]
+  $$\sigma(x_i) = \frac{e^{x_i}}{\sum_{j} e^{x_j}} $$
 
 #### Training Method
 
 - **Loss Function:** Categorical Cross-Entropy.
 - **Optimization:** Gradient Descent with Momentum.
 - **Learning Rate Scheduling:**
-  \[ \alpha_{epoch} = \frac{\alpha_0}{1 + \lambda \cdot epoch} \]
+  $$\alpha_{epoch} = \frac{\alpha_0}{1 + \lambda \cdot epoch} $$
 
 ### CNN Model Architecture
 
