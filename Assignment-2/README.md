@@ -18,5 +18,10 @@ Dataset Statistics:
 Mean per channel (RGB): [0.49139968 0.48215841 0.44653091]
 Std per channel (RGB): [0.24703223 0.24348513 0.26158784]
 ```
+## Sample Images
 
-## Representation Learning with Autoencoders and Denoising Autoencoders
+### Random Sampling of 5 Images from Each Class
+![Random Sampling](images/random_sample.png)
+### RGB Distribution of the Classes
+![RGB Distribution](images/RGB_distribution.png)
+
