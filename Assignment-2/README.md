@@ -1,4 +1,5 @@
-# CS671: Deep Learning and Applications 
+# Representation Learning with Autoencoders and Denoising Autoencoders
+CS671: Deep Learning and Applications 
 
 ## CIFAR-10 Dataset
 
