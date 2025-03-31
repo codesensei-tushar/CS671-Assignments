@@ -1,5 +1,6 @@
 import torch
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 def train_epoch(model, dataloader, val_loader, criterion, optimizer, device, noise_factor, n_epochs):
     """Train for one epoch and track losses"""

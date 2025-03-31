@@ -30,7 +30,8 @@ class CIFAR10Dataset(Dataset):
 transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    transforms.RandomHorizontalFlip(p=0.5)
 ])
 
 train_dataset = CIFAR10Dataset(train_images, train_labels, transform=transform)

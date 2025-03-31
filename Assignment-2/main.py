@@ -13,10 +13,10 @@ device = torch.device("cuda")
 n_epochs = 20
 noise_factors = [0.1,0.3,0.5]
 model_paths = {
+    'ae': 'Assignment-2/models/autoencoder.pth',
     0.1: 'Assignment-2/models/denoising_autoencoder_0.1.pth',
-    0.5: 'Assignment-2/models/denoising_autoencoder_0.5.pth',
     0.3: 'Assignment-2/models/denoising_autoencoder_0.3.pth',
-    'ae': 'Assignment-2/models/autoencoder.pth'
+    0.5: 'Assignment-2/models/denoising_autoencoder_0.5.pth'
 }
 
 model = AutoEncoder(in_channles=3,latent_dim=256)
@@ -28,6 +28,8 @@ torch.save(model.state_dict(),'Assignment-2/models/autoencoder.pth')
 
 
 model = DenoisingAutoencoder(latent_dim=128).to(device)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=1e-3)
 losses = {}
 for noise_factor in noise_factors:
     print(f"\nTraining with noise factor {noise_factor}")
@@ -58,5 +60,5 @@ for name, path in model_paths.items():
     models[str(name)] = model
 # print(models.items())
 # Call visualize_reconstruction
-visualize_reconstruction(models, noise_factor=0.3, test_loader=test_loader, num_images=8)
+visualize_reconstruction(models,test_loader=test_loader, num_images=8)
 epoch_vs_loss(losses)
