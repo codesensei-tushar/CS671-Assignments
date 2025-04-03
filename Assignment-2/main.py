@@ -56,7 +56,7 @@ models = {}
 # losses['ae'] = {'train': train_loss, 'val': val_loss}
 for name, path in model_paths.items():
     model = DenoisingAutoencoder(latent_dim=128).to(device) if name != 'ae' else AutoEncoder(in_channles=3, latent_dim=256).to(device)
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(path,weights_only=True))
     models[str(name)] = model
 # print(models.items())
 # Call visualize_reconstruction

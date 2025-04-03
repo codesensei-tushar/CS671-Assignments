@@ -1,17 +1,27 @@
 import pickle
 import numpy as np
+from pathlib import Path
 
 def load_cifar10_data():
     """Load and preprocess CIFAR-10 dataset"""
-    batch_files = [
-        "Assignment-2/cifar-10-python/data_batch_1",
-        "Assignment-2/cifar-10-python/data_batch_2",
-        "Assignment-2/cifar-10-python/data_batch_3",
-        "Assignment-2/cifar-10-python/data_batch_4",
-        "Assignment-2/cifar-10-python/data_batch_5"
-    ]
-    test_file = "Assignment-2/cifar-10-python/test_batch"
-    meta_file = "Assignment-2/cifar-10-python/batches.meta"
+    # batch_files = [
+    #     "Assignment-2/cifar-10-python/data_batch_1",
+    #     "Assignment-2/cifar-10-python/data_batch_2",
+    #     "Assignment-2/cifar-10-python/data_batch_3",
+    #     "Assignment-2/cifar-10-python/data_batch_4",
+    #     "Assignment-2/cifar-10-python/data_batch_5"
+    # ]
+    # test_file = "Assignment-2/cifar-10-python/test_batch"
+    # meta_file = "Assignment-2/cifar-10-python/batches.meta"
+
+
+    script_dir = Path(__file__).parent
+    data_dir = script_dir / 'cifar-10-python'
+
+    # Define file paths relative to export.py
+    batch_files = [data_dir / f'data_batch_{i}' for i in range(1, 6)]
+    test_file = data_dir / 'test_batch'
+    meta_file = data_dir / 'batches.meta'
 
     def unpickle(file):
         with open(file, 'rb') as fo:
