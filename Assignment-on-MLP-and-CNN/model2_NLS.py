@@ -1,194 +1,170 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
-from sklearn.metrics import confusion_matrix,accuracy_score
-
-#DATA LOADING
-
-data_path="C:/Users/nshej/dl assignment/CS671_Dataset_Assignment1/Dataset-1/NLS/dataset.txt"
-
-
-
-data = pd.read_csv(data_path, sep=r"\s+", header=None,engine='python')
-
-
-
-#concatenating all the data
-data.columns = ['X', 'Y']
-data.reset_index(drop=True, inplace=True)
-data['label'] = ''  # Create the 'label' column
-data.loc[0:500,"label"]="1"
-data.loc[500:1000,"label"]="2"
-data.loc[1000:2000,"label"]="3"
-data["class1"]=0
-data["class2"]=0
-data["class3"]=0
-data.loc[data["label"]=="1","class1"]=1
-data.loc[data["label"]=="2","class2"]=1
-data.loc[data["label"]=="3","class3"]=1
-data["label"]=data[["class1","class2","class3"]].values.tolist()
-data=data.drop(['class1','class2','class3'],axis=1)
-dataset1=pd.DataFrame(data)
-
-#TRIAN_TEST_SPLIT
-
-
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-train_set,test_set=train_test_split(dataset1,test_size=0.3,random_state=42)
-# print(train_set)
-# print(test_set)
-X_train=np.array(train_set[['X','Y']].values)
-X_train=X_train.astype(float)
-Y_train=np.array(train_set["label"].tolist())
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import confusion_matrix, accuracy_score
+import matplotlib.pyplot as plt
 
-#TO AVOID OVERFITTING
+# DATA LOADING
+dataset = pd.read_csv("nls.csv")
+dataset['label'] = dataset['label'].map({1: 0, 2: 1, 3: 2})
 
-from sklearn.preprocessing import StandardScaler
+X = dataset[['X', 'Y']].values.astype(float)
+y = dataset['label'].values
 
-scaler = StandardScaler()
+# ONE-HOT ENCODING
+def one_hot_encode(y):
+    n_classes = len(np.unique(y))
+    one_hot = np.zeros((len(y), n_classes))
+    for i, val in enumerate(y):
+        one_hot[i, val] = 1
+    return one_hot
+
+Y = one_hot_encode(y)
+
+# DATA SPLITTING
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
+# NORMALIZATION
+scaler = MinMaxScaler()
 X_train = scaler.fit_transform(X_train)
-X_train=scaler.transform(X_train)
+X_test = scaler.transform(X_test)
 
-#MODEL
-
+# SINGLE MLP CLASSIFIER
 class MLP:
-    def __init__(self,input_size,hidden_size,num_classes,learning_rate=0.01,epochs=1000):
-        self.input_size=input_size 
-        self.hidden_size=hidden_size
-        self.num_classes=num_classes
-        self.lr=learning_rate
-        self.epochs=epochs
+    def __init__(self, input_size, hidden_size, output_size, learning_rate):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        self.learning_rate = learning_rate
+        self.W1 = np.random.randn(input_size, hidden_size)
+        self.b1 = np.zeros((1, hidden_size))
+        self.W2 = np.random.randn(hidden_size, output_size)
+        self.b2 = np.zeros((1, output_size))
 
-        self.weights_input_hidden=np.random.randn(input_size+1,hidden_size)*0.01
-        self.weights_hidden_output=np.random.randn(hidden_size+1,num_classes)*0.01
-        
-        self.loss_history=[]
-    def sigmoid(self,x):
-        return 1/(1+np.exp(-x))
-    def sigmoid_derivative(self,x):
-        return x*(1-x)
-    
     def softmax(self, x):
-        """Softmax Function for Output Layer"""
-        exp_x = np.exp(x - np.max(x))  # Numerical stability this give good result
-        return exp_x / np.sum(exp_x, axis=0, keepdims=True)
-    def forward(self,x):
-        x=np.insert(x,0,1)
-        self.hidden_input=np.dot(x,self.weights_input_hidden)
-        self.hidden_output=self.sigmoid(self.hidden_input)
+        e_x = np.exp(x - np.max(x))
+        return e_x / np.sum(e_x, axis=1, keepdims=True)
 
-        hidden_with_bias=np.insert(self.hidden_output,0,1)
+    def relu(self, x):
+        return np.maximum(0, x)
 
-        self.final_input=np.dot(hidden_with_bias,self.weights_hidden_output)
-        self.final_output = self.softmax(self.final_input)
+    def relu_derivative(self, x):
+        return (x > 0).astype(float)
 
-        
-        return self.final_output
-    
-    def train(self,X,y):
-        for epoch in range(self.epochs):
-            total_loss=0
-            for i in range(len(X)):
-                x=X[i]
-                target=np.array(y[i])
+    def train(self, X, Y, epochs):
+        for epoch in range(epochs):
+            # Forward
+            Z1 = np.dot(X, self.W1) + self.b1
+            A1 = self.relu(Z1)
+            Z2 = np.dot(A1, self.W2) + self.b2
+            A2 = self.softmax(Z2)
 
-                output=self.forward(x)
-                error=target-output
-                loss=np.sum(error**2)
-                total_loss+=loss
+            # Backward
+            dZ2 = A2 - Y
+            dW2 = np.dot(A1.T, dZ2)
+            db2 = np.sum(dZ2, axis=0, keepdims=True)
 
-                #Backpropagation
+            dA1 = np.dot(dZ2, self.W2.T)
+            dZ1 = dA1 * self.relu_derivative(Z1)
+            dW1 = np.dot(X.T, dZ1)
+            db1 = np.sum(dZ1, axis=0)
 
-                hidden_with_bias = np.insert(self.hidden_output, 0, 1)
-                delta_output = error * self.sigmoid_derivative(output)
-                delta_hidden = np.dot(self.weights_hidden_output[1:], delta_output) * self.sigmoid_derivative(self.hidden_output)
+            self.W1 -= self.learning_rate * dW1
+            self.b1 -= self.learning_rate * db1
+            self.W2 -= self.learning_rate * dW2
+            self.b2 -= self.learning_rate * db2
 
-                self.weights_hidden_output += self.lr * np.outer(hidden_with_bias, delta_output)
-                x_with_bias = np.insert(x, 0, 1)
-                self.weights_input_hidden += self.lr * np.outer(x_with_bias, delta_hidden) 
-            # print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {total_loss}")
-                
-
-            avg_loss = total_loss / len(X)
-            # print(avg_loss)
-            self.loss_history.append(avg_loss)
-    
     def predict(self, x):
-        """Prediction Function"""
-        output = self.forward(x)
-        return np.argmax(output) + 1 
-    def plot_loss(self):
-        plt.plot(range(1,len(self.loss_history)+1),self.loss_history,marker=0,linestyle="-")
-        plt.xlabel("epochs")
-        plt.ylabel("Average Loss")
-        plt.grid(True)
-        plt.show()
+        Z1 = np.dot(x, self.W1) + self.b1
+        A1 = self.relu(Z1)
+        Z2 = np.dot(A1, self.W2) + self.b2
+        A2 = self.softmax(Z2)
+        return np.argmax(A2, axis=1)
 
-mlp = MLP(input_size=2, hidden_size=4, num_classes=3, learning_rate=0.1, epochs=100)
-mlp.train(X_train, Y_train)
-mlp.plot_loss()
+# ONE-VS-ONE CLASSIFIER
+class OvOMLPClassifier:
+    def __init__(self, input_size, hidden_size, learning_rate, epochs):
+        self.classifiers = {}
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.learning_rate = learning_rate
+        self.epochs = epochs
 
+    def train(self, X, Y):
+        n_classes = Y.shape[1]
+        for i in range(n_classes):
+            for j in range(i + 1, n_classes):
+                idx = np.where((Y[:, i] == 1) | (Y[:, j] == 1))[0]
+                X_ij = X[idx]
+                y_ij = Y[idx]
+                y_binary = np.array([1 if y[i] == 1 else 0 for y in y_ij])
+                y_binary_onehot = one_hot_encode(y_binary)
+                mlp = MLP(self.input_size, self.hidden_size, 2, self.learning_rate)
+                mlp.train(X_ij, y_binary_onehot, self.epochs)
+                self.classifiers[(i, j)] = mlp
 
-from sklearn.preprocessing import StandardScaler
+    def predict(self, x):
+        votes = [0] * 3
+        for (i, j), clf in self.classifiers.items():
+            pred = clf.predict(np.array([x]))[0]
+            votes[i if pred == 1 else j] += 1
+        return np.argmax(votes) + 1
 
-
-X_test=test_set[['X','Y']].values
-X_test=X_test.astype(float)
-scaler = StandardScaler()
-X_test = scaler.fit_transform(X_test)
-X_test=scaler.transform(X_test)
-Y_test=test_set["label"].values
-
-
-
-def test_model(perceptron, X_test, Y_test):
-    correct = 0
-    total = len(X_test)
-
-    for i in range(total):
-        predicted_class= mlp.predict(X_test[i])  # Get class prediction
-        actual_class = np.argmax(Y_test[i]) + 1  # Convert one-hot to class label
-
-        print(f"Sample {i+1}: Feature: {X_test[i]}, Predicted: {predicted_class}, Actual: {actual_class}")
-
-        if predicted_class == actual_class:
-            correct += 1
-
-    accuracy = (correct / total) * 100
-    print(f"\nModel Accuracy: {accuracy:.2f}%")
-test_model(MLP, X_test, Y_test)
-
-
-#INFERENCES
-
-from sklearn.metrics import confusion_matrix,accuracy_score
-def plot_decision_boundary(model, X, y, title):
+# PLOT DECISION BOUNDARY
+def plot_decision_boundary(model, X, Y, title="Decision Boundary"):
     x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
     y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
-                         np.linspace(y_min, y_max, 100))
-    
-    Z = np.array([model.predict(np.array([xx_val, yy_val])) for xx_val, yy_val in zip(xx.ravel(), yy.ravel())])
+    h = 0.02
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    Z = np.array([model.predict(point) for point in grid])
     Z = Z.reshape(xx.shape)
-    
-    plt.figure(figsize=(8, 6))
-    plt.contourf(xx, yy, Z, alpha=0.3, cmap=plt.cm.Paired)
-    plt.scatter(X[:, 0], X[:, 1], c=np.argmax(y, axis=1), edgecolor='k', cmap=plt.cm.Paired)
+
+    plt.figure(figsize=(10, 6))
+    plt.contourf(xx, yy, Z, alpha=0.4, cmap=plt.cm.coolwarm)
+    colors = ['r', 'g', 'b']
+    labels = ['1', '2', '3']
+    for idx, label in enumerate(labels):
+        class_points = X[np.array([np.argmax(y) == idx for y in Y])]
+        plt.scatter(class_points[:, 0], class_points[:, 1], c=colors[idx], label=f'Class {label}', s=10)
     plt.title(title)
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
-# Plot Decision Boundaries for each class pair
-plot_decision_boundary(mlp, X_train, Y_train, "Decision Boundary - Training Data")
+# TRAINING OvO CLASSIFIER
+ovo = OvOMLPClassifier(input_size=2, hidden_size=4, learning_rate=0.1, epochs=100)
+ovo.train(X_train, Y_train)
 
-# Confusion Matrix & Accuracy
-y_pred = [mlp.predict(x) for x in X_test]
-y_true = [np.argmax(y) + 1 for y in Y_test]
+# TESTING
+def test_ovo_model(model, X_test, Y_test):
+    correct = 0
+    total = len(X_test)
+    for i in range(total):
+        predicted_class = model.predict(X_test[i])
+        actual_class = np.argmax(Y_test[i]) + 1
+        print(f"Sample {i + 1}: Feature: {X_test[i]}, Predicted: {predicted_class}, Actual: {actual_class}")
+        if predicted_class == actual_class:
+            correct += 1
+    accuracy = (correct / total) * 100
+    print(f"\nOvO Model Accuracy: {accuracy:.2f}%")
 
-conf_matrix = confusion_matrix(y_true, y_pred)
-accuracy = accuracy_score(y_true, y_pred)
+test_ovo_model(novo, X_test, Y_test)
 
-print("Confusion Matrix:")
+# CONFUSION MATRIX
+y_pred_ovo = [novo.predict(x) for x in X_test]
+y_true_ovo = [np.argmax(y) + 1 for y in Y_test]
+conf_matrix = confusion_matrix(y_true_ovo, y_pred_ovo)
+accuracy = accuracy_score(y_true_ovo, y_pred_ovo)
+
+print("OvO Confusion Matrix:")
 print(conf_matrix)
-print(f"Classification Accuracy: {accuracy * 100:.2f}%")
+print(f"OvO Classification Accuracy: {accuracy * 100:.2f}%")
+
+# PLOT DECISION BOUNDARY
+plot_decision_boundary(novo, X_train, Y_train, title="OvO MLP Decision Boundary")
